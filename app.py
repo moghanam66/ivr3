@@ -83,6 +83,6 @@ def messages():
 
 if __name__ == "__main__":
     try:
-        APP.run(debug=False, port=APP.config["PORT"])  # nosec debug
+        APP.run(debug=True)  # nosec debug
     except Exception as exception:
         raise exception
