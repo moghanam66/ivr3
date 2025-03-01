@@ -1,88 +1,75 @@
-# Copyright (c) Microsoft Corporation. All rights reserved.
-# Licensed under the MIT License.
-
-import asyncio
 import sys
-from types import MethodType
+import traceback
+from datetime import datetime
 
-from flask import Flask, request, Response
-from botbuilder.core import (
-    BotFrameworkAdapter,
-    BotFrameworkAdapterSettings,
-    MessageFactory,
-    TurnContext,
-)
-from botbuilder.schema import Activity, InputHints
+from aiohttp import web
+from aiohttp.web import Request, Response, json_response
+from botbuilder.core import (BotFrameworkAdapter, BotFrameworkAdapterSettings,
+                             TurnContext)
+from botbuilder.core.integration import aiohttp_error_middleware
+from botbuilder.schema import Activity, ActivityTypes
+
 from bot import MyBot
+from config import DefaultConfig
 
-# Create the loop and Flask app
-LOOP = asyncio.get_event_loop()
-APP = Flask(__name__, instance_relative_config=True)
-APP.config.from_object("config.DefaultConfig")
+CONFIG = DefaultConfig()
 
-# Create adapter.
-# See https://aka.ms/about-bot-adapter to learn more about how bots work.
-SETTINGS = BotFrameworkAdapterSettings(APP.config["APP_ID"], APP.config["APP_PASSWORD"])
+SETTINGS = BotFrameworkAdapterSettings(CONFIG.APP_ID, CONFIG.APP_PASSWORD)
 ADAPTER = BotFrameworkAdapter(SETTINGS)
 
 
-# Catch-all for errors.
-# pylint: disable=unused-argument
-async def on_error(self, context: TurnContext, error: Exception):
-    # This check writes out errors to console log .vs. app insights.
-    # NOTE: In production environment, you should consider logging this to Azure
-    #       application insights.
-    print(f"\n [on_turn_error]: {error}", file=sys.stderr)
+async def on_error(context: TurnContext, error: Exception):
 
-    # Send a message to the user
-    error_message_text = "Sorry, it looks like something went wrong."
-    error_message = MessageFactory.text(
-        error_message_text, error_message_text, InputHints.expecting_input
+    print(f"\n [on_turn_error] unhandled error: {error}", file=sys.stderr)
+    traceback.print_exc()
+
+    await context.send_activity("The bot encountered an error or bug.")
+    await context.send_activity(
+        "To continue to run this bot, please fix the bot source code."
     )
-    await context.send_activity(error_message)
 
+    if context.activity.channel_id == "emulator":
 
-ADAPTER.on_turn_error = MethodType(on_error, ADAPTER)
+        trace_activity = Activity(
+            label="TurnError",
+            name="on_turn_error Trace",
+            timestamp=datetime.utcnow(),
+            type=ActivityTypes.trace,
+            value=f"{error}",
+            value_type="https://www.botframework.com/schemas/error",
+        )
+        
+        await context.send_activity(trace_activity)
 
-# Create the main dialog
+ADAPTER.on_turn_error = on_error
+
 BOT = MyBot()
 
+async def messages(req: Request) -> Response:
 
-# Listen for incoming requests on GET / for Azure monitoring
-@APP.route("/", methods=["GET"])
-def ping():
-    return Response(status=200)
-
-
-# Listen for incoming requests on /api/messages.
-@APP.route("/api/messages", methods=["POST"])
-def messages():
-    # Main bot message handler.
-    if "application/json" in request.headers["Content-Type"]:
-        body = request.json
+    if "application/json" in req.headers["Content-Type"]:
+        body = await req.json()
     else:
         return Response(status=415)
 
     activity = Activity().deserialize(body)
-    auth_header = (
-        request.headers["Authorization"] if "Authorization" in request.headers else ""
-    )
+    auth_header = req.headers["Authorization"] if "Authorization" in req.headers else ""
 
-    async def aux_func(turn_context):
-        await BOT.on_turn(turn_context)
+    response = await ADAPTER.process_activity(activity, auth_header, BOT.on_turn)
+    if response:
+        return json_response(data=response.body, status=response.status)
+    return Response(status=201)
 
-    try:
-        task = LOOP.create_task(
-            ADAPTER.process_activity(activity, auth_header, aux_func)
-        )
-        LOOP.run_until_complete(task)
-        return Response(status=201)
-    except Exception as exception:
-        raise exception
+# Modifying the below code
 
-
+def init_func(argv):
+    APP = web.Application(middlewares=[aiohttp_error_middleware])
+    APP.router.add_post("/api/messages", messages)
+    return APP
 if __name__ == "__main__":
+    APP = init_func(None)
+
     try:
-        APP.run(debug=True)  # nosec debug
-    except Exception as exception:
-        raise exception
+        web.run_app(APP, host="0.0.0.0", port=CONFIG.PORT)
+    except Exception as error:
+        raise error
