@@ -1,3 +1,4 @@
-botbuilder-core>=4.5.0.b4
-flask>=1.0.3
-
+botbuilder-integration-aiohttp>=4.14.0
+aiohttp
+botbuilder-core
+botbuilder-schema
