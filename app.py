@@ -70,6 +70,6 @@ if __name__ == "__main__":
     APP = init_func(None)
 
     try:
-        web.run_app(APP, port=CONFIG.PORT)
+        web.run_app(APP)
     except Exception as error:
         raise error
