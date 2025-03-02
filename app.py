@@ -17,7 +17,7 @@ CONFIG = DefaultConfig()
 SETTINGS = BotFrameworkAdapterSettings(CONFIG.APP_ID, CONFIG.APP_PASSWORD)
 ADAPTER = BotFrameworkAdapter(SETTINGS)
 
-
+# ee
 async def on_error(context: TurnContext, error: Exception):
 
     print(f"\n [on_turn_error] unhandled error: {error}", file=sys.stderr)
