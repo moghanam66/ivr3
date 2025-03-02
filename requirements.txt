@@ -13,3 +13,4 @@ azure-core
 redis
 azure-cognitiveservices-speech
 rtclient @ https://github.com/Azure-Samples/aoai-realtime-audio-sdk/releases/download/py%2Fv0.5.3/rtclient-0.5.3.tar.gz#sha256=6d13ca5642f764286575bcb292ffceb0b8eeab5780a6b30e053bb87e46c1e180
+flask[async]==3.1.0
