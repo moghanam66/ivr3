@@ -363,7 +363,7 @@ class MyBot(ActivityHandler):
     async def on_message_activity(self, turn_context: TurnContext):
         user_query = turn_context.activity.text
         print(f"Received message: {user_query}")
-        response_text = await voice_chat(user_query)
+        response_text = await voice_chat(turn_context, user_query)
         await turn_context.send_activity(response_text)
 
     async def on_members_added_activity(
