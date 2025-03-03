@@ -340,7 +340,7 @@ def detect_critical_issue(text):
     return False
 
 
-async def voice_chat(user_query):
+async def voice_chat(user_query , turn_context: TurnContext):
     if not user_query:
         return "في انتظار اوامرك"
     if clean_text(user_query) in ["إنهاء", "خروج"]:
