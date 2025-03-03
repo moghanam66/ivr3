@@ -340,7 +340,7 @@ def detect_critical_issue(text):
     return False
 
 
-async def voice_chat(user_query , turn_context: TurnContext):
+async def voice_chat(user_query ):
     if not user_query:
         return "في انتظار اوامرك"
     if clean_text(user_query) in ["إنهاء", "خروج"]:
@@ -352,7 +352,7 @@ async def voice_chat(user_query , turn_context: TurnContext):
     #return response
     return Activity(
     type=ActivityTypes.message,
-    from_property=ChannelAccount(id=turn_context.activity.recipient.id),  # Bot as the sender
+    from_property=ChannelAccount(id=TurnContext.activity.recipient.id),  # Bot as the sender
     text=response)
 
 
