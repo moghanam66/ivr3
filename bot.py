@@ -18,8 +18,7 @@ from azure.core.credentials import AzureKeyCredential
 
 # Bot Framework dependencies
 from botbuilder.core import ActivityHandler, TurnContext
-from botbuilder.schema import ChannelAccount
-
+from botbuilder.schema import ChannelAccount , Activity, ActivityTypes
 # RT client for GPT‑4o realtime fallback (make sure the rtclient package is installed)
 from rtclient import RTLowLevelClient, ResponseCreateMessage, ResponseCreateParams
 
